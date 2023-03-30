@@ -1,0 +1,17 @@
+plugins {
+  id 'org.jetbrains.intellij' version '1.13.3'
+  id 'java'
+}
+ 
+repositories {
+  mavenCentral()
+}
+
+apply plugin: 'idea'
+apply plugin: 'org.jetbrains.intellij'
+apply plugin: 'java'
+ 
+intellij {
+    version = '2023.1'
+    updateSinceUntilBuild = false
+}

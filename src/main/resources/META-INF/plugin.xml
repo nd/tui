@@ -1,0 +1,39 @@
+<idea-plugin>
+  <id>tui</id>
+  <name>Tui</name>
+  <vendor email="dmitry.neverov@gmail.com">me</vendor>
+
+  <idea-version since-build="231.4840.387"/>
+
+  <version>1</version>
+
+  <description>
+    <![CDATA[
+    Plugin provides text ui for directory listings. Inspired by emacs dired mode.
+    <br/>
+    To open a directory as text, run the TOpenDir action.
+    <br/>
+    Keys in directory file:
+    <ul>
+      <li>enter - open file</li>
+      <li>j - move caret down</li>
+      <li>k - move caret up</li>
+      <li>g - refresh</li>
+      <li>p - copy path to clipboard</li>
+      <li>u - go to parent directory</li>
+    </ul>
+    ]]>
+  </description>
+
+  <actions>
+    <action class="tui.Dir$OpenAction" text="TOpenDir" icon="AllIcons.Actions.MenuOpen"/>
+  </actions>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <virtualFileSystem key="tui" implementationClass="tui.TuiFS"/>
+    <typedHandler implementation="tui.TuiTypingHandler" id="TuiTypeActionHandler"/>
+    <fileType name="Dir" implementationClass="tui.Dir$DirFileType" fileNames="" fieldName="INSTANCE"/>
+  </extensions>
+
+  <depends>com.intellij.modules.lang</depends>
+</idea-plugin>
