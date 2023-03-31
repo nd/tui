@@ -106,6 +106,7 @@ public class Tui {
   }
 
   static void init() {
+    TuiTypingHandler.init();
     if (initialized.compareAndSet(false, true)) {
       EditorActionHandler orig = EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_ENTER);
       EditorActionManager.getInstance().setActionHandler(IdeActions.ACTION_EDITOR_ENTER, new TuiEditorActionHandler(orig));
@@ -154,7 +155,7 @@ public class Tui {
     @Override
     protected void doExecute(@NotNull Editor editor, @Nullable Caret caret, DataContext dataContext) {
       if (Tui.isTui(editor.getVirtualFile())) {
-        TuiTypingHandler.INSTANCE.execute(editor, '\n', dataContext);
+        TuiTypingHandler.getInstance().execute(editor, '\n', dataContext);
         return;
       }
       myOriginal.execute(editor, caret, dataContext);

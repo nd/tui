@@ -31,7 +31,6 @@
 
   <extensions defaultExtensionNs="com.intellij">
     <virtualFileSystem key="tui" implementationClass="tui.TuiFS"/>
-    <typedHandler implementation="tui.TuiTypingHandler" id="TuiTypeActionHandler"/>
     <fileType name="Dir" implementationClass="tui.Dir$DirFileType" fileNames="" fieldName="INSTANCE"/>
   </extensions>
 

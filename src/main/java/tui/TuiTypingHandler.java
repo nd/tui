@@ -11,16 +11,29 @@ import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.psi.PsiFile;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 public class TuiTypingHandler extends TypedHandlerDelegate implements TypedActionHandler {
-  static TuiTypingHandler INSTANCE;
+  private static final AtomicReference<TuiTypingHandler> INSTANCE = new AtomicReference<>();
 
   private final TypedActionHandler myDelegate;
 
-  public TuiTypingHandler() {
-    INSTANCE = this;
-    TypedAction typingAction = TypedAction.getInstance();
-    myDelegate = typingAction.getRawHandler();
-    typingAction.setupRawHandler(INSTANCE);
+  public TuiTypingHandler(@NotNull TypedActionHandler original) {
+    myDelegate = original;
+  }
+
+  static void init() {
+    if (INSTANCE.get() == null) {
+      TypedAction typingAction = TypedAction.getInstance();
+      TuiTypingHandler instance = new TuiTypingHandler(typingAction.getRawHandler());
+      if (INSTANCE.compareAndSet(null, instance)) {
+        typingAction.setupRawHandler(INSTANCE.get());
+      }
+    }
+  }
+
+  static @NotNull TuiTypingHandler getInstance() {
+    return INSTANCE.get();
   }
 
   @Override
