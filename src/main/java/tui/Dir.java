@@ -1,32 +1,43 @@
 package tui;
 
 import com.github.markusbernhardt.proxy.util.PlatformUtil;
+import com.intellij.CommonBundle;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ScrollType;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
+import com.intellij.openapi.fileChooser.FileChooserDescriptor;
+import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.ui.DialogPanel;
+import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.UserDataHolder;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.ui.TextFieldWithHistoryWithBrowseButton;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.PlatformIcons;
+import com.intellij.util.ui.FormBuilder;
+import com.intellij.util.ui.JBUI;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.List;
 
 public class Dir implements TypedActionHandler {
   private static final Key<VirtualFile> DIR = Key.create("tui.dir.currentDir");
@@ -205,7 +216,21 @@ public class Dir implements TypedActionHandler {
       if (dir == null) {
         return;
       }
-      Dir.openAsText(project, dir, e.getData(CommonDataKeys.VIRTUAL_FILE));
+      OpenDirDialog dialog = new OpenDirDialog(project, dir);
+      if (dialog.showAndGet()) {
+        String specifiedPath = dialog.myDir.getText();
+        VirtualFile selectedDir;
+        if (specifiedPath.equals("~") || specifiedPath.equals("~/")) {
+          selectedDir = VirtualFileManager.getInstance().findFileByNioPath(Path.of(PlatformUtil.getUserHomeDir()));
+        } else {
+          selectedDir = VirtualFileManager.getInstance().findFileByNioPath(Path.of(specifiedPath));
+        }
+        if (selectedDir != null) {
+          Dir.openAsText(project, selectedDir, e.getData(CommonDataKeys.VIRTUAL_FILE));
+        } else {
+          Messages.showErrorDialog(project, "Directory not found", CommonBundle.getErrorTitle());
+        }
+      }
     }
 
     private @Nullable VirtualFile getDirToOpen(@NotNull AnActionEvent e) {
@@ -221,6 +246,33 @@ public class Dir implements TypedActionHandler {
         it = it.getParent();
       }
       return it != null ? it : VirtualFileManager.getInstance().findFileByNioPath(Path.of(PlatformUtil.getUserHomeDir()));
+    }
+  }
+
+
+  private static class OpenDirDialog extends DialogWrapper {
+    private final TextFieldWithHistoryWithBrowseButton myDir;
+
+    public OpenDirDialog(@Nullable Project project, @Nullable VirtualFile dir) {
+      super(project, false);
+      myDir = new TextFieldWithHistoryWithBrowseButton();
+      FileChooserDescriptor config = new FileChooserDescriptor(false, true, false, false, false, false);
+      FileChooserFactory.getInstance().installFileCompletion(myDir.getChildComponent().getTextEditor(), config, true, getDisposable());
+      String defaultPath = dir != null ? dir.getCanonicalPath() : null;
+      if (defaultPath == null) {
+        defaultPath = "~/";
+      }
+      myDir.setText(defaultPath);
+      init();
+    }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+      DialogPanel result = new DialogPanel(new BorderLayout());
+      result.setPreferredSize(JBUI.size(500, 30));
+      result.add(FormBuilder.createFormBuilder().addComponent(myDir).getPanel(), BorderLayout.NORTH);
+      result.setPreferredFocusedComponent(myDir);
+      return result;
     }
   }
 
