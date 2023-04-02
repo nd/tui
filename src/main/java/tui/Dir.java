@@ -2,6 +2,9 @@ package tui;
 
 import com.github.markusbernhardt.proxy.util.PlatformUtil;
 import com.intellij.CommonBundle;
+import com.intellij.ide.DataManager;
+import com.intellij.ide.FileSelectInContext;
+import com.intellij.ide.SelectInContext;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ScrollType;
@@ -11,6 +14,8 @@ import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.TextEditor;
+import com.intellij.openapi.fileEditor.impl.text.TextEditorCustomizer;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.ide.CopyPasteManager;
 import com.intellij.openapi.project.Project;
@@ -36,8 +41,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.nio.file.Path;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 public class Dir implements TypedActionHandler {
   private static final Key<VirtualFile> DIR = Key.create("tui.dir.currentDir");
@@ -85,8 +90,7 @@ public class Dir implements TypedActionHandler {
       runAction(editor, dataContext, IdeActions.ACTION_EDITOR_MOVE_CARET_UP);
     }
     if (charTyped == 'g') {
-      UserDataHolder data = Tui.getTuiData(file);
-      VirtualFile dir = data.getUserData(DIR);
+      VirtualFile dir = getDir(file);
       if (dir != null) {
         Tui.update(file, editor, tui -> printDir(tui, dir, null));
       }
@@ -99,8 +103,7 @@ public class Dir implements TypedActionHandler {
       }
     }
     if (charTyped == 'u') {
-      UserDataHolder data = Tui.getTuiData(file);
-      VirtualFile dir = data.getUserData(DIR);
+      VirtualFile dir = getDir(file);
       if (dir != null) {
         VirtualFile parent = dir.getParent();
         Project project = editor.getProject();
@@ -115,7 +118,7 @@ public class Dir implements TypedActionHandler {
     }
   }
 
-  private @Nullable VirtualFile getFileUnderCaret(@NotNull Editor editor) {
+  private static @Nullable VirtualFile getFileUnderCaret(@NotNull Editor editor) {
     VirtualFile file = editor.getVirtualFile();
     if (file == null) {
       return null;
@@ -129,6 +132,11 @@ public class Dir implements TypedActionHandler {
       return files.get(fileIdx);
     }
     return null;
+  }
+
+  private static @Nullable VirtualFile getDir(@Nullable VirtualFile file) {
+    UserDataHolder data = Tui.getTuiData(file);
+    return data.getUserData(DIR);
   }
 
   private static void runAction(@NotNull Editor editor, @NotNull DataContext dataContext, @NotNull String actionId) {
@@ -303,6 +311,34 @@ public class Dir implements TypedActionHandler {
     @Override
     public boolean isBinary() {
       return false;
+    }
+  }
+
+  public static class DirEditorCustomizer implements TextEditorCustomizer {
+    @Override
+    public void customize(@NotNull TextEditor textEditor) {
+      Editor editor = textEditor.getEditor();
+      VirtualFile file = editor.getVirtualFile();
+      if (file instanceof TuiFile) {
+        VirtualFile dir = getDir(file);
+        if (dir != null) {
+          editor.getComponent();
+          DataManager.registerDataProvider(editor.getComponent(), new DataProvider() {
+            @Override
+            public @Nullable Object getData(@NotNull @NonNls String dataId) {
+              if (SelectInContext.DATA_KEY.is(dataId)) {
+                Project project = editor.getProject();
+                if (project == null) {
+                  return null;
+                }
+                VirtualFile f = getFileUnderCaret(editor);
+                return new FileSelectInContext(project, f != null ? f : dir);
+              }
+              return null;
+            }
+          });
+        }
+      }
     }
   }
 }

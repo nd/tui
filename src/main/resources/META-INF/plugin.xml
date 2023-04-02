@@ -32,6 +32,7 @@
   <extensions defaultExtensionNs="com.intellij">
     <virtualFileSystem key="tui" implementationClass="tui.TuiFS"/>
     <fileType name="Dir" implementationClass="tui.Dir$DirFileType" fileNames="" fieldName="INSTANCE"/>
+    <textEditorCustomizer implementation="tui.Dir$DirEditorCustomizer"/>
   </extensions>
 
   <depends>com.intellij.modules.lang</depends>
