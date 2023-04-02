@@ -5,7 +5,7 @@
 
   <idea-version since-build="231.4840.387"/>
 
-  <version>1</version>
+  <version>2</version>
 
   <description>
     <![CDATA[
@@ -24,6 +24,14 @@
     </ul>
     ]]>
   </description>
+
+  <change-notes><![CDATA[
+    <ul>
+      <li>Ability to open arbitrary directory</li>
+      <li>Ability to open file under caret in project view and in terminal</li>
+    </ul>
+    ]]>
+  </change-notes>
 
   <actions>
     <action class="tui.Dir$OpenAction" text="TOpenDir" icon="AllIcons.Actions.MenuOpen"/>
