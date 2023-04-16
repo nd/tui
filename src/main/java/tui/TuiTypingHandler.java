@@ -13,13 +13,17 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.atomic.AtomicReference;
 
+// Typing handler is global. Some other plugin can take our handler and use it as delegate.
+// Therefore, we cannot simply restore our original handler. So our handler must continue
+// working once it is installed. But when our plugin is unloaded, we set isEnabled
+// to false and the handler will always delegate to the original.
 public class TuiTypingHandler extends TypedHandlerDelegate implements TypedActionHandler {
   private static final AtomicReference<TuiTypingHandler> INSTANCE = new AtomicReference<>();
 
-  private final TypedActionHandler myDelegate;
+  private final TypedActionHandler myOriginal;
 
   public TuiTypingHandler(@NotNull TypedActionHandler original) {
-    myDelegate = original;
+    myOriginal = original;
   }
 
   static void init() {
@@ -38,9 +42,13 @@ public class TuiTypingHandler extends TypedHandlerDelegate implements TypedActio
 
   @Override
   public void execute(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    if (!TuiService.isLoaded()) {
+      myOriginal.execute(editor, charTyped, dataContext);
+      return;
+    }
     VirtualFile file = editor.getVirtualFile();
-    if (!Tui.isTui(file)) {
-      myDelegate.execute(editor, charTyped, dataContext);
+    if (!TuiService.getInstance().isTui(file)) {
+      myOriginal.execute(editor, charTyped, dataContext);
       return;
     }
 
@@ -53,8 +61,11 @@ public class TuiTypingHandler extends TypedHandlerDelegate implements TypedActio
 
   @Override
   public @NotNull Result beforeCharTyped(char c, @NotNull Project project, @NotNull Editor editor, @NotNull PsiFile file, @NotNull FileType fileType) {
+    if (!TuiService.isLoaded()) {
+      return super.beforeCharTyped(c, project, editor, file, fileType);
+    }
     VirtualFile vfile = editor.getVirtualFile();
-    if (!Tui.isTui(vfile)) {
+    if (!TuiService.getInstance().isTui(vfile)) {
       return super.beforeCharTyped(c, project, editor, file, fileType);
     }
     return Result.STOP;

@@ -1,14 +1,9 @@
 package tui;
 
-import com.intellij.openapi.actionSystem.DataContext;
-import com.intellij.openapi.actionSystem.IdeActions;
 import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.editor.Caret;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ScrollType;
-import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
-import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditor;
@@ -27,7 +22,6 @@ import java.util.function.Consumer;
 
 public class Tui {
 
-  private static final Key<Boolean> TUI_FILE = Key.create("tui.tuiFileMark");
   private static final Key<TypedActionHandler> TUI_TYPING_HANDLER = Key.create("tui.typingHandler");
   private static final Key<UserDataHolder> TUI_DATA = Key.create("tui.data");
 
@@ -63,7 +57,7 @@ public class Tui {
   }
 
   static @Nullable Tui update(@NotNull TuiFile file, @Nullable Editor editor, @NotNull Consumer<Tui> task) {
-    if (!Tui.isTui(file)) {
+    if (!TuiService.getInstance().isTui(file)) {
       return null;
     }
     Document doc = FileDocumentManager.getInstance().getDocument(file);
@@ -105,22 +99,6 @@ public class Tui {
     }
   }
 
-  static void init() {
-    TuiTypingHandler.init();
-    if (initialized.compareAndSet(false, true)) {
-      EditorActionHandler orig = EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_ENTER);
-      EditorActionManager.getInstance().setActionHandler(IdeActions.ACTION_EDITOR_ENTER, new TuiEditorActionHandler(orig));
-    }
-  }
-
-  public static boolean isTui(@Nullable UserDataHolder o) {
-    return o != null && o.getUserData(TUI_FILE) == Boolean.TRUE;
-  }
-
-  public static void setTui(@NotNull UserDataHolder o, boolean isTui) {
-    o.putUserData(TUI_FILE, isTui);
-  }
-
   public static @Nullable TypedActionHandler getTypingHandler(@Nullable UserDataHolder o) {
     return o != null ? o.getUserData(TUI_TYPING_HANDLER) : null;
   }
@@ -136,34 +114,5 @@ public class Tui {
 
   public static void setTuiData(@NotNull VirtualFile file, @NotNull UserDataHolder data) {
     file.putUserData(TUI_DATA, data);
-  }
-
-  static class TuiEditorActionHandler extends EditorActionHandler {
-    private final EditorActionHandler myOriginal;
-    TuiEditorActionHandler(EditorActionHandler original) {
-      myOriginal = original;
-    }
-
-    @Override
-    protected boolean isEnabledForCaret(@NotNull Editor editor, @NotNull Caret caret, DataContext dataContext) {
-      if (Tui.isTui(editor.getVirtualFile())) {
-        return true;
-      }
-      return myOriginal.isEnabled(editor, caret, dataContext);
-    }
-
-    @Override
-    protected void doExecute(@NotNull Editor editor, @Nullable Caret caret, DataContext dataContext) {
-      if (Tui.isTui(editor.getVirtualFile())) {
-        TuiTypingHandler.getInstance().execute(editor, '\n', dataContext);
-        return;
-      }
-      myOriginal.execute(editor, caret, dataContext);
-    }
-
-    @Override
-    public boolean runForAllCarets() {
-      return myOriginal.runForAllCarets();
-    }
   }
 }

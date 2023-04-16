@@ -49,10 +49,9 @@ public class Dir implements TypedActionHandler {
   private static final Key<List<VirtualFile>> FILES = Key.create("tui.dir.files");
 
   public static void openAsText(@NotNull Project project, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
-    Tui.init();
     TuiFile file = TuiFS.getInstance().createFile(project, "", DirFileType.INSTANCE);
     file.setWritable(false);
-    Tui.setTui(file, true);
+    TuiService.getInstance().setTui(file, true);
     Tui.setTypingHandler(file, new Dir());
     Tui.open(file, project, tui -> printDir(tui, dir, focus));
   }

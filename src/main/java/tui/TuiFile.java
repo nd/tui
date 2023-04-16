@@ -39,6 +39,18 @@ class TuiFile extends LightVirtualFile implements VirtualFilePathWrapper /*just 
     return TuiFS.getInstance();
   }
 
+  @Override
+  public @NotNull String getUrl() {
+    // when file is closed platform asks for an url which requires a file system;
+    // if plugin is unloaded the file system might already be unloaded and
+    // attempt to get it will fail with NPE.
+    if (TuiService.isLoaded()) {
+      return super.getUrl();
+    } else {
+      return "";
+    }
+  }
+
   public @NotNull Project getProject() {
     return myProject;
   }
