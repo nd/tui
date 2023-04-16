@@ -21,6 +21,7 @@
       <li>g - refresh</li>
       <li>p - copy path to clipboard</li>
       <li>u - go to parent directory</li>
+      <li>q - close the dir and open previous file (if there was a previous file in the editor when dir was opened)</li>
     </ul>
     ]]>
   </description>

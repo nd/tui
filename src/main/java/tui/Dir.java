@@ -62,20 +62,19 @@ public class Dir implements TypedActionHandler {
     if (file == null) {
       return;
     }
+    Project project = editor.getProject();
     if (charTyped == '\n') {
       VirtualFile f = getFileUnderCaret(editor);
       if (f == null) {
         return;
       }
       if (f.isDirectory()) {
-        Project project = editor.getProject();
         if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
           Dir.openAsText(project, f, null);
         } else {
           Tui.update(file, editor, tui -> printDir(tui, f, null));
         }
       } else {
-        Project project = editor.getProject();
         if (project != null) {
           FileEditorManager.getInstance(project).openFile(f, true);
         }
@@ -105,13 +104,22 @@ public class Dir implements TypedActionHandler {
       VirtualFile dir = getDir(file);
       if (dir != null) {
         VirtualFile parent = dir.getParent();
-        Project project = editor.getProject();
         if (parent != null) {
           if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
             Dir.openAsText(project, parent, dir);
           } else {
             Tui.update(file, editor, tui -> printDir(tui, parent, dir));
           }
+        }
+      }
+    }
+    if (charTyped == 'q') {
+      if (project != null) {
+        VirtualFile prev = TuiFile.PREV_FILE.get(file);
+        if (prev != null) {
+          FileEditorManager.getInstance(project).openFile(prev, true);
+        } else {
+          FileEditorManager.getInstance(project).closeFile(file);
         }
       }
     }
