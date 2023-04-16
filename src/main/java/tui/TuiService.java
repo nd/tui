@@ -29,7 +29,10 @@ public final class TuiService {
 
   private static final AtomicBoolean ourLoaded = new AtomicBoolean(false);
 
+  private final long myId;
+
   public TuiService() {
+    myId = System.currentTimeMillis();
     MessageBusConnection bus = ApplicationManager.getApplication().getMessageBus().connect();
     bus.subscribe(DynamicPluginListener.TOPIC, new DynamicPluginListener() {
       @Override
@@ -78,8 +81,13 @@ public final class TuiService {
     return ourLoaded.get();
   }
 
+  public long getId() {
+    return myId;
+  }
+
   static class TuiEditorActionHandler extends EditorActionHandler {
     private final EditorActionHandler myOriginal;
+
     TuiEditorActionHandler(EditorActionHandler original) {
       myOriginal = original;
     }

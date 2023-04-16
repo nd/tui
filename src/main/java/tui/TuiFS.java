@@ -3,7 +3,10 @@ package tui;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.*;
+import com.intellij.openapi.vfs.DeprecatedVirtualFileSystem;
+import com.intellij.openapi.vfs.NonPhysicalFileSystem;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.VirtualFileManager;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,7 +27,13 @@ public class TuiFS extends DeprecatedVirtualFileSystem implements NonPhysicalFil
   }
 
   public @NotNull TuiFile createFile(@NotNull Project project, @NotNull String name, @NotNull FileType fileType) {
-    String id = String.valueOf(myFileId.incrementAndGet());
+    // Workaround stupid switcher behavior: it saves urls in config and tries to load
+    // them after restart. But we don't have files after restart. Switcher doesn't care.
+    // If we then create a new file with the same id, stupid switcher won't show them.
+    // Removing these files on project close doesn't help since switcher is fucking stupid.
+    // Workaround is to use some kind of run id in TuiService which is not service
+    // creation timestamp.
+    String id = TuiService.getInstance().getId() + "-" + myFileId.incrementAndGet();
     TuiFile result = new TuiFile(project, id, name, fileType);
     myFiles.put(id, result);
     return result;
