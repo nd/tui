@@ -5,7 +5,7 @@
 
   <idea-version since-build="231.4840.387"/>
 
-  <version>2</version>
+  <version>3</version>
 
   <description>
     <![CDATA[
@@ -28,8 +28,9 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Ability to open arbitrary directory</li>
-      <li>Ability to open file under caret in project view and in terminal</li>
+      <li>Fixed exceptions on plugin unloading</li>
+      <li>Fixed bug when directories were not shown in the switcher</li>
+      <li>Added action closing the dir and restoring the file which was there before</li>
     </ul>
     ]]>
   </change-notes>
