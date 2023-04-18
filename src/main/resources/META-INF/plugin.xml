@@ -5,7 +5,7 @@
 
   <idea-version since-build="231.4840.387"/>
 
-  <version>3</version>
+  <version>4</version>
 
   <description>
     <![CDATA[
@@ -28,9 +28,7 @@
 
   <change-notes><![CDATA[
     <ul>
-      <li>Fixed exceptions on plugin unloading</li>
-      <li>Fixed bug when directories were not shown in the switcher</li>
-      <li>Added action closing the dir and restoring the file which was there before</li>
+      <li>Fixed more exceptions on plugin unloading</li>
     </ul>
     ]]>
   </change-notes>
