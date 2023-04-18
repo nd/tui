@@ -34,7 +34,7 @@ public class TuiFS extends DeprecatedVirtualFileSystem implements NonPhysicalFil
     // Workaround is to use some kind of run id in TuiService which is not service
     // creation timestamp.
     String id = TuiService.getInstance().getId() + "-" + myFileId.incrementAndGet();
-    TuiFile result = new TuiFile(project, id, name, fileType);
+    TuiFile result = new TuiFile(this, project, id, name, fileType);
     myFiles.put(id, result);
     return result;
   }

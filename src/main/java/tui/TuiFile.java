@@ -13,12 +13,14 @@ import org.jetbrains.annotations.NotNull;
 class TuiFile extends LightVirtualFile implements VirtualFilePathWrapper /*just to show presentable name in switcher*/ {
   static final Key<VirtualFile> PREV_FILE = Key.create("tui.prev.file");
 
+  private final TuiFS myFs;
   private final Project myProject;
   private final String myId;
   private String myPresentableName;
 
-  public TuiFile(@NotNull Project project, @NotNull String id, @NotNull String name, @NotNull FileType fileType) {
+  public TuiFile(@NotNull TuiFS fs, @NotNull Project project, @NotNull String id, @NotNull String name, @NotNull FileType fileType) {
     super(name, fileType, "");
+    myFs = fs;
     myProject = project;
     myId = id;
     myPresentableName = name;
@@ -40,7 +42,7 @@ class TuiFile extends LightVirtualFile implements VirtualFilePathWrapper /*just 
 
   @Override
   public @NotNull VirtualFileSystem getFileSystem() {
-    return TuiFS.getInstance();
+    return myFs;
   }
 
   @Override
@@ -67,5 +69,10 @@ class TuiFile extends LightVirtualFile implements VirtualFilePathWrapper /*just 
   @Override
   public boolean enforcePresentableName() {
     return true;
+  }
+
+  @Override
+  public boolean isValid() {
+    return super.isValid() && TuiService.isLoaded();
   }
 }
