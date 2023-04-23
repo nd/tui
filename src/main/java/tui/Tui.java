@@ -17,16 +17,13 @@ import com.intellij.openapi.vfs.VirtualFile;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Map;
 import java.util.function.Consumer;
 
 public class Tui {
-
+  public static final Key<Map<String, TypedActionHandler>> TUI_KEYMAP = Key.create("tui.keymap");
   private static final Key<TypedActionHandler> TUI_TYPING_HANDLER = Key.create("tui.typingHandler");
   private static final Key<UserDataHolder> TUI_DATA = Key.create("tui.data");
-
-  private static final AtomicBoolean initialized = new AtomicBoolean(false);
-
 
   public final StringBuilder text = new StringBuilder();
   public final UserDataHolder data;

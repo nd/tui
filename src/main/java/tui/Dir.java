@@ -47,6 +47,15 @@ import java.util.*;
 public class Dir implements TypedActionHandler {
   private static final Key<VirtualFile> DIR = Key.create("tui.dir.currentDir");
   private static final Key<List<VirtualFile>> FILES = Key.create("tui.dir.files");
+  private static final Map<String, TypedActionHandler> DEFAULT_KEY_MAP = new HashMap<>() {{
+    put("\n", Dir::openFileUnderCaret);
+    put("j", Dir::down);
+    put("k", Dir::up);
+    put("g", Dir::refresh);
+    put("p", Dir::copyPathUnderCaret);
+    put("u", Dir::gotoParentDir);
+    put("q", Dir::closeDir);
+  }};
 
   public static void openAsText(@NotNull Project project, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
     TuiFile file = TuiFS.getInstance().createFile(project, "", DirFileType.INSTANCE);
@@ -62,66 +71,11 @@ public class Dir implements TypedActionHandler {
     if (file == null) {
       return;
     }
-    Project project = editor.getProject();
-    if (charTyped == '\n') {
-      VirtualFile f = getFileUnderCaret(editor);
-      if (f == null) {
-        return;
-      }
-      if (f.isDirectory()) {
-        if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
-          Dir.openAsText(project, f, null);
-        } else {
-          Tui.update(file, editor, tui -> printDir(tui, f, null));
-        }
-      } else {
-        if (project != null) {
-          FileEditorManager.getInstance(project).openFile(f, true);
-        }
-      }
-    }
-
-    if (charTyped == 'j') {
-      runAction(editor, dataContext, IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN);
-    }
-    if (charTyped == 'k') {
-      runAction(editor, dataContext, IdeActions.ACTION_EDITOR_MOVE_CARET_UP);
-    }
-    if (charTyped == 'g') {
-      VirtualFile dir = getDir(file);
-      if (dir != null) {
-        Tui.update(file, editor, tui -> printDir(tui, dir, null));
-      }
-    }
-    if (charTyped == 'p') {
-      VirtualFile f = getFileUnderCaret(editor);
-      if (f != null) {
-        String path = f.getPath();
-        CopyPasteManager.getInstance().setContents(new StringSelection(path));
-      }
-    }
-    if (charTyped == 'u') {
-      VirtualFile dir = getDir(file);
-      if (dir != null) {
-        VirtualFile parent = dir.getParent();
-        if (parent != null) {
-          if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
-            Dir.openAsText(project, parent, dir);
-          } else {
-            Tui.update(file, editor, tui -> printDir(tui, parent, dir));
-          }
-        }
-      }
-    }
-    if (charTyped == 'q') {
-      if (project != null) {
-        VirtualFile prev = TuiFile.PREV_FILE.get(file);
-        if (prev != null) {
-          FileEditorManager.getInstance(project).openFile(prev, true);
-        } else {
-          FileEditorManager.getInstance(project).closeFile(file);
-        }
-      }
+    Map<String, TypedActionHandler> keymap = Tui.TUI_KEYMAP.get(file, DEFAULT_KEY_MAP);
+    String charStr = String.valueOf(charTyped);
+    TypedActionHandler handler = keymap != null ? keymap.get(charStr) : null;
+    if (handler != null) {
+      handler.execute(editor, charTyped, dataContext);
     }
   }
 
@@ -346,6 +300,93 @@ public class Dir implements TypedActionHandler {
           });
         }
       }
+    }
+  }
+
+  public static void up(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    runAction(editor, dataContext, IdeActions.ACTION_EDITOR_MOVE_CARET_UP);
+  }
+
+  public static void down(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    runAction(editor, dataContext, IdeActions.ACTION_EDITOR_MOVE_CARET_DOWN);
+  }
+
+  public static void openFileUnderCaret(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
+    if (file == null) {
+      return;
+    }
+    Project project = editor.getProject();
+    if (charTyped == '\n') {
+      VirtualFile f = getFileUnderCaret(editor);
+      if (f == null) {
+        return;
+      }
+      if (f.isDirectory()) {
+        if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
+          Dir.openAsText(project, f, null);
+        } else {
+          Tui.update(file, editor, tui -> printDir(tui, f, null));
+        }
+      } else {
+        if (project != null) {
+          FileEditorManager.getInstance(project).openFile(f, true);
+        }
+      }
+    }
+  }
+
+  public static void copyPathUnderCaret(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    VirtualFile f = getFileUnderCaret(editor);
+    if (f != null) {
+      String path = f.getPath();
+      CopyPasteManager.getInstance().setContents(new StringSelection(path));
+    }
+  }
+
+  public static void gotoParentDir(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
+    if (file == null) {
+      return;
+    }
+    Project project = editor.getProject();
+    VirtualFile dir = getDir(file);
+    if (dir != null) {
+      VirtualFile parent = dir.getParent();
+      if (parent != null) {
+        if (project != null && FileEditorManager.getInstance(project).getAllEditors(file).length > 1) {
+          Dir.openAsText(project, parent, dir);
+        } else {
+          Tui.update(file, editor, tui -> printDir(tui, parent, dir));
+        }
+      }
+    }
+  }
+
+  public static void closeDir(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
+    if (file == null) {
+      return;
+    }
+    Project project = editor.getProject();
+    if (project != null) {
+      VirtualFile prev = TuiFile.PREV_FILE.get(file);
+      if (prev != null) {
+        FileEditorManager.getInstance(project).openFile(prev, true);
+      } else {
+        FileEditorManager.getInstance(project).closeFile(file);
+      }
+    }
+  }
+
+  public static void refresh(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
+    if (file == null) {
+      return;
+    }
+    VirtualFile dir = getDir(file);
+    if (dir != null) {
+      Tui.update(file, editor, tui -> printDir(tui, dir, null));
     }
   }
 }
