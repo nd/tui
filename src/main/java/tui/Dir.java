@@ -14,6 +14,7 @@ import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.fileEditor.TextEditor;
 import com.intellij.openapi.fileEditor.impl.text.TextEditorCustomizer;
 import com.intellij.openapi.fileTypes.FileType;
@@ -28,6 +29,7 @@ import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.UserDataHolder;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
+import com.intellij.pom.Navigatable;
 import com.intellij.ui.TextFieldWithHistoryWithBrowseButton;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.PlatformIcons;
@@ -283,8 +285,12 @@ public class Dir implements TypedActionHandler {
       if (file instanceof TuiFile) {
         VirtualFile dir = getDir(file);
         if (dir != null) {
-          editor.getComponent();
-          DataManager.registerDataProvider(editor.getComponent(), new DataProvider() {
+          JComponent component = editor.getComponent();
+          DataProvider originalDataProvider = DataManager.getDataProvider(component);
+          if (originalDataProvider != null) {
+            DataManager.removeDataProvider(component);
+          }
+          DataManager.registerDataProvider(component, new DataProvider() {
             @Override
             public @Nullable Object getData(@NotNull @NonNls String dataId) {
               if (SelectInContext.DATA_KEY.is(dataId)) {
@@ -295,7 +301,14 @@ public class Dir implements TypedActionHandler {
                 VirtualFile f = getFileUnderCaret(editor);
                 return new FileSelectInContext(project, f != null ? f : dir);
               }
-              return null;
+              if (CommonDataKeys.NAVIGATABLE_ARRAY.is(dataId)) {
+                Project project = editor.getProject();
+                VirtualFile dirItem = getFileUnderCaret(editor);
+                if (dirItem != null && project != null) {
+                  return new Navigatable[]{ new NavigatableDirItem(project, file, dirItem) };
+                }
+              }
+              return originalDataProvider != null ? originalDataProvider.getData(dataId) : null;
             }
           });
         }
@@ -387,6 +400,38 @@ public class Dir implements TypedActionHandler {
     VirtualFile dir = getDir(file);
     if (dir != null) {
       Tui.update(file, editor, tui -> printDir(tui, dir, null));
+    }
+  }
+
+  private static class NavigatableDirItem implements Navigatable {
+    private final VirtualFile dirItem;
+    private final Project project;
+    private final VirtualFile dir;
+
+    public NavigatableDirItem(@NotNull Project project, @NotNull VirtualFile dir, @NotNull VirtualFile dirItem) {
+      this.project = project;
+      this.dir = dir;
+      this.dirItem = dirItem;
+    }
+
+    @Override
+    public void navigate(boolean requestFocus) {
+      if (dirItem.isDirectory()) {
+        openAsText(project, dirItem, dir);
+      }
+      else {
+        new OpenFileDescriptor(project, dirItem, 0).navigate(requestFocus);
+      }
+    }
+
+    @Override
+    public boolean canNavigate() {
+      return true;
+    }
+
+    @Override
+    public boolean canNavigateToSource() {
+      return true;
     }
   }
 }
