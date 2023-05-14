@@ -56,7 +56,6 @@ public class Dir implements TypedActionHandler {
     put("g", Dir::refresh);
     put("p", Dir::copyPathUnderCaret);
     put("u", Dir::gotoParentDir);
-    put("q", Dir::closeDir);
   }};
 
   public static void openAsText(@NotNull Project project, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
@@ -372,22 +371,6 @@ public class Dir implements TypedActionHandler {
         } else {
           Tui.update(file, editor, tui -> printDir(tui, parent, dir));
         }
-      }
-    }
-  }
-
-  public static void closeDir(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
-    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
-    if (file == null) {
-      return;
-    }
-    Project project = editor.getProject();
-    if (project != null) {
-      VirtualFile prev = TuiFile.PREV_FILE.get(file);
-      if (prev != null) {
-        FileEditorManager.getInstance(project).openFile(prev, true);
-      } else {
-        FileEditorManager.getInstance(project).closeFile(file);
       }
     }
   }

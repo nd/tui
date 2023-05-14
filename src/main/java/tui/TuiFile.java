@@ -2,16 +2,13 @@ package tui;
 
 import com.intellij.openapi.fileTypes.FileType;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NlsSafe;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFilePathWrapper;
 import com.intellij.openapi.vfs.VirtualFileSystem;
 import com.intellij.testFramework.LightVirtualFile;
 import org.jetbrains.annotations.NotNull;
 
 class TuiFile extends LightVirtualFile implements VirtualFilePathWrapper /*just to show presentable name in switcher*/ {
-  static final Key<VirtualFile> PREV_FILE = Key.create("tui.prev.file");
 
   private final TuiFS myFs;
   private final Project myProject;

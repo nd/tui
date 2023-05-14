@@ -13,7 +13,6 @@ import com.intellij.openapi.editor.EditorFactory;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Disposer;
 import com.intellij.openapi.util.Key;
@@ -50,9 +49,6 @@ public final class TuiService {
         Disposer.dispose(disposable);
       }
     });
-    FileEditorListener fileEditorListener = new FileEditorListener();
-    bus.subscribe(FileEditorManagerListener.FILE_EDITOR_MANAGER, fileEditorListener);
-    bus.subscribe(FileEditorManagerListener.Before.FILE_EDITOR_MANAGER, fileEditorListener);
     TuiTypingHandler.init();
     EditorActionHandler orig = EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_ENTER);
     EditorActionManager.getInstance().setActionHandler(IdeActions.ACTION_EDITOR_ENTER, new TuiEditorActionHandler(orig));
@@ -123,43 +119,6 @@ public final class TuiService {
     @Override
     public boolean runForAllCarets() {
       return myOriginal.runForAllCarets();
-    }
-  }
-
-  /**
-   * Idea doesn't provide event: file was opened in this split and replaced
-   * such and such file. To but it calls this listener in this order on awt:
-   *
-   * beforeFileOpened(new file) - if new file is tui - save it
-   * beforeFileClosed(old file) - if we have saved tui file, save the old file
-   * fileOpened(new file) - if tui file for which we have info is opened - save it in tui file
-   */
-  private class FileEditorListener implements FileEditorManagerListener, FileEditorManagerListener.Before {
-    private VirtualFile myOpeningTuiFile;
-    private VirtualFile myFileBeforeTui;
-
-    @Override
-    public void beforeFileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-      if (!TuiService.isLoaded()) {
-        return;
-      }
-      myOpeningTuiFile = TuiService.getInstance().isTui(file) ? file : null;
-    }
-
-    @Override
-    public void beforeFileClosed(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-      if (myOpeningTuiFile != null) {
-        myFileBeforeTui = file;
-      }
-    }
-
-    @Override
-    public void fileOpened(@NotNull FileEditorManager source, @NotNull VirtualFile file) {
-      if (file.equals(myOpeningTuiFile)) {
-        file.putUserData(TuiFile.PREV_FILE, myFileBeforeTui);
-      }
-      myOpeningTuiFile = null;
-      myFileBeforeTui = null;
     }
   }
 }
