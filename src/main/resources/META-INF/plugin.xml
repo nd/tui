@@ -5,7 +5,7 @@
 
   <idea-version since-build="231.4840.387"/>
 
-  <version>5</version>
+  <version>6</version>
 
   <description>
     <![CDATA[
@@ -21,14 +21,14 @@
       <li>g - refresh</li>
       <li>p - copy path to clipboard</li>
       <li>u - go to parent directory</li>
-      <li>q - close the dir and open previous file (if there was a previous file in the editor when dir was opened)</li>
     </ul>
     ]]>
   </description>
 
   <change-notes><![CDATA[
     <ul>
-      <li>Added ability for plugins to customize keymap dirs</li>
+      <li>Integration with split plugin: now it is possible to open file under caret in a split</li>
+      <li>The 'q' action is dropped, use the 'Split' plugin to open previous file in the current split</li>
     </ul>
     ]]>
   </change-notes>
