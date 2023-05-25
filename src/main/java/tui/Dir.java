@@ -27,6 +27,7 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.UserDataHolder;
+import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.Navigatable;
@@ -382,6 +383,7 @@ public class Dir implements TypedActionHandler {
     }
     VirtualFile dir = getDir(file);
     if (dir != null) {
+      VfsUtil.markDirtyAndRefresh(false, false, true, dir);
       Tui.update(file, editor, tui -> printDir(tui, dir, null));
     }
   }
