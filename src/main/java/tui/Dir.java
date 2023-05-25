@@ -6,6 +6,7 @@ import com.intellij.ide.DataManager;
 import com.intellij.ide.FileSelectInContext;
 import com.intellij.ide.SelectInContext;
 import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ScrollType;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
@@ -43,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
@@ -57,6 +59,7 @@ public class Dir implements TypedActionHandler {
     put("g", Dir::refresh);
     put("p", Dir::copyPathUnderCaret);
     put("u", Dir::gotoParentDir);
+    put("D", Dir::deleteFile);
   }};
 
   public static void openAsText(@NotNull Project project, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
@@ -385,6 +388,25 @@ public class Dir implements TypedActionHandler {
     if (dir != null) {
       VfsUtil.markDirtyAndRefresh(false, false, true, dir);
       Tui.update(file, editor, tui -> printDir(tui, dir, null));
+    }
+  }
+
+  public static void deleteFile(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    VirtualFile f = getFileUnderCaret(editor);
+    if (f != null) {
+      if (Messages.showYesNoDialog("Delete file " + f.getPath() + "?", "Delete File", Messages.getQuestionIcon()) == Messages.YES) {
+        ApplicationManager.getApplication().runWriteAction(() -> {
+          try {
+            f.delete("Tui");
+          } catch (IOException e) {
+            Messages.showErrorDialog(editor.getProject(), "Failed to delete file", CommonBundle.getErrorTitle());
+          }
+        });
+        refresh(editor, charTyped, dataContext);
+      }
+    }
+    else {
+      Messages.showErrorDialog(editor.getProject(), "File not found", CommonBundle.getErrorTitle());
     }
   }
 
