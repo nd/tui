@@ -12,6 +12,7 @@ import com.intellij.openapi.editor.ScrollType;
 import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
+import com.intellij.openapi.editor.impl.EditorMarkupModelImpl;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -286,6 +287,10 @@ public class Dir implements TypedActionHandler {
       Editor editor = textEditor.getEditor();
       VirtualFile file = editor.getVirtualFile();
       if (file instanceof TuiFile) {
+        editor.getSettings().setUseSoftWraps(false);
+        editor.getSettings().setRightMarginShown(false);
+        ((EditorMarkupModelImpl)editor.getMarkupModel()).setTrafficLightIconVisible(false);
+
         VirtualFile dir = getDir(file);
         if (dir != null) {
           JComponent component = editor.getComponent();
