@@ -5,6 +5,7 @@ import com.intellij.CommonBundle;
 import com.intellij.ide.DataManager;
 import com.intellij.ide.FileSelectInContext;
 import com.intellij.ide.SelectInContext;
+import com.intellij.lang.injection.InjectedLanguageManager;
 import com.intellij.openapi.actionSystem.*;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
@@ -33,6 +34,8 @@ import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.Navigatable;
+import com.intellij.psi.PsiDocumentManager;
+import com.intellij.psi.PsiFile;
 import com.intellij.ui.TextFieldWithHistoryWithBrowseButton;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.PlatformIcons;
@@ -290,6 +293,12 @@ public class Dir implements TypedActionHandler {
         editor.getSettings().setUseSoftWraps(false);
         editor.getSettings().setRightMarginShown(false);
         ((EditorMarkupModelImpl)editor.getMarkupModel()).setTrafficLightIconVisible(false);
+        Project project = editor.getProject();
+        PsiFile psiFile = project != null ? PsiDocumentManager.getInstance(project).getPsiFile(editor.getDocument()) : null;
+        if (psiFile != null) {
+          // disable spell checker:
+          psiFile.putUserData(InjectedLanguageManager.FRANKENSTEIN_INJECTION, true);
+        }
 
         VirtualFile dir = getDir(file);
         if (dir != null) {
@@ -301,16 +310,11 @@ public class Dir implements TypedActionHandler {
           DataManager.registerDataProvider(component, new DataProvider() {
             @Override
             public @Nullable Object getData(@NotNull @NonNls String dataId) {
-              if (SelectInContext.DATA_KEY.is(dataId)) {
-                Project project = editor.getProject();
-                if (project == null) {
-                  return null;
-                }
+              if (project != null && SelectInContext.DATA_KEY.is(dataId)) {
                 VirtualFile f = getFileUnderCaret(editor);
                 return new FileSelectInContext(project, f != null ? f : dir);
               }
               if (CommonDataKeys.NAVIGATABLE_ARRAY.is(dataId)) {
-                Project project = editor.getProject();
                 VirtualFile dirItem = getFileUnderCaret(editor);
                 if (dirItem != null && project != null) {
                   return new Navigatable[]{ new NavigatableDirItem(project, file, dirItem) };
