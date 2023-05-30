@@ -14,7 +14,6 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.editor.impl.EditorMarkupModelImpl;
-import com.intellij.openapi.editor.markup.EffectType;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
@@ -122,6 +121,11 @@ public class Dir implements TypedActionHandler {
 
   private static void printDir(@NotNull Tui tui, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
     tui.name = dir.getPath();
+
+    if (!dir.isValid()) {
+      tui.text.append(dir.getPath()).append(" is not found\n");
+      return;
+    }
 
     VirtualFile[] children = dir.getChildren();
     List<VirtualFile> dirs = new ArrayList<>();
