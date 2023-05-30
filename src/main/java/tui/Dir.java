@@ -14,6 +14,8 @@ import com.intellij.openapi.editor.actionSystem.EditorActionHandler;
 import com.intellij.openapi.editor.actionSystem.EditorActionManager;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
 import com.intellij.openapi.editor.impl.EditorMarkupModelImpl;
+import com.intellij.openapi.editor.markup.EffectType;
+import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileChooser.FileChooserDescriptor;
 import com.intellij.openapi.fileChooser.FileChooserFactory;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -37,6 +39,7 @@ import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiFile;
+import com.intellij.ui.JBColor;
 import com.intellij.ui.TextFieldWithHistoryWithBrowseButton;
 import com.intellij.util.ObjectUtils;
 import com.intellij.util.PlatformIcons;
@@ -139,38 +142,66 @@ public class Dir implements TypedActionHandler {
 
     tui.text.append(dir.getPath()).append(":\n");
 
-    tui.text.append(".\n");
+    Set<VirtualFile> markedFiles = MARKED_FILES.get(tui.newData, Collections.emptySet());
+
+    tui.text.append(".");
+    if (markedFiles.contains(dir)) {
+      Tui.Highlighter h = new Tui.Highlighter();
+      h.startOffset = tui.text.length() - 1;
+      h.endOffset = tui.text.length();
+      h.attributes = new TextAttributes(JBColor.RED, null, null, null, Font.PLAIN);
+      tui.highlighters.add(h);
+    }
+    tui.text.append("\n");
+
     VirtualFile parentDir = dir.getParent();
     if (parentDir != null) {
-      tui.text.append("..\n");
+      tui.text.append("..");
+      if (markedFiles.contains(parentDir)) {
+        Tui.Highlighter h = new Tui.Highlighter();
+        h.startOffset = tui.text.length() - 2;
+        h.endOffset = tui.text.length();
+        h.attributes = new TextAttributes(JBColor.RED, null, null, null, Font.PLAIN);
+        tui.highlighters.add(h);
+      }
+      tui.text.append("\n");
     }
 
-    Set<VirtualFile> markedFiles = MARKED_FILES.get(tui.newData, Collections.emptySet());
     Integer firstItemOffset = null;
     Integer caretOffset = null;
     for (VirtualFile child : dirs) {
       if (firstItemOffset == null) {
         firstItemOffset = tui.text.length();
       }
+      int lineStart = tui.text.length();
       if (Objects.equals(child, focus)) {
-        caretOffset = tui.text.length();
+        caretOffset = lineStart;
       }
       tui.text.append("[").append(child.getName()).append("]");
       if (markedFiles.contains(child)) {
-        tui.text.append("*");
+        Tui.Highlighter h = new Tui.Highlighter();
+        h.startOffset = lineStart;
+        h.endOffset = tui.text.length();
+        h.attributes = new TextAttributes(JBColor.RED, null, null, null, Font.PLAIN);
+        tui.highlighters.add(h);
       }
       tui.text.append("\n");
     }
     for (VirtualFile child : files) {
+      int lineStart = tui.text.length();
       if (firstItemOffset == null) {
-        firstItemOffset = tui.text.length();
+        firstItemOffset = lineStart;
       }
       if (Objects.equals(child, focus)) {
-        caretOffset = tui.text.length();
+        caretOffset = lineStart;
       }
       tui.text.append(child.getName());
       if (markedFiles.contains(child)) {
-        tui.text.append("*");
+        Tui.Highlighter h = new Tui.Highlighter();
+        h.startOffset = lineStart;
+        h.endOffset = tui.text.length();
+        h.attributes = new TextAttributes(JBColor.RED, null, null, null, Font.PLAIN);
+        tui.highlighters.add(h);
       }
       tui.text.append("\n");
     }

@@ -5,6 +5,9 @@ import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ScrollType;
 import com.intellij.openapi.editor.actionSystem.TypedActionHandler;
+import com.intellij.openapi.editor.markup.HighlighterLayer;
+import com.intellij.openapi.editor.markup.HighlighterTargetArea;
+import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditor;
 import com.intellij.openapi.fileEditor.FileEditorManager;
@@ -14,9 +17,12 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.UserDataHolder;
 import com.intellij.openapi.util.UserDataHolderBase;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.ui.JBColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.Font;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -31,6 +37,7 @@ public class Tui {
   public Integer caretOffset;
   public ScrollType scrollToCaretType;
   public String name;
+  public java.util.List<Highlighter> highlighters = new ArrayList<>();
 
   public Tui(@NotNull UserDataHolder data) {
     this.data = data;
@@ -78,6 +85,13 @@ public class Tui {
           file.setPresentableName(tui.name);
         }
         if (editor != null) {
+          editor.getMarkupModel().removeAllHighlighters();
+          for (Highlighter h : tui.highlighters) {
+            if (h.attributes != null) {
+              editor.getMarkupModel().addRangeHighlighter(
+                      h.startOffset, h.endOffset, h.layer, h.attributes, HighlighterTargetArea.EXACT_RANGE);
+            }
+          }
           if (tui.caretOffset != null) {
             editor.getCaretModel().moveToOffset(tui.caretOffset);
           }
@@ -111,5 +125,12 @@ public class Tui {
 
   public static void setTuiData(@NotNull VirtualFile file, @NotNull UserDataHolder data) {
     file.putUserData(TUI_DATA, data);
+  }
+
+  public static class Highlighter {
+    int startOffset;
+    int endOffset;
+    int layer = HighlighterLayer.SYNTAX; // HighlighterLayer
+    TextAttributes attributes;
   }
 }
