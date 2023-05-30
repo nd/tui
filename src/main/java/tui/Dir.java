@@ -30,6 +30,7 @@ import com.intellij.openapi.util.Key;
 import com.intellij.openapi.util.NlsContexts;
 import com.intellij.openapi.util.NlsSafe;
 import com.intellij.openapi.util.UserDataHolder;
+import com.intellij.openapi.util.text.StringUtil;
 import com.intellij.openapi.vfs.VfsUtil;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.VirtualFileManager;
@@ -56,6 +57,7 @@ import java.util.*;
 public class Dir implements TypedActionHandler {
   private static final Key<VirtualFile> DIR = Key.create("tui.dir.currentDir");
   private static final Key<List<VirtualFile>> FILES = Key.create("tui.dir.files");
+  private static final Key<Set<VirtualFile>> MARKED_FILES = Key.create("tui.dir.maked.files");
   private static final Map<String, TypedActionHandler> DEFAULT_KEY_MAP = new HashMap<>() {{
     put("\n", Dir::openFileUnderCaret);
     put("j", Dir::down);
@@ -64,6 +66,7 @@ public class Dir implements TypedActionHandler {
     put("p", Dir::copyPathUnderCaret);
     put("u", Dir::gotoParentDir);
     put("D", Dir::deleteFile);
+    put("m", Dir::toggleMark);
   }};
 
   public static void openAsText(@NotNull Project project, @NotNull VirtualFile dir, @Nullable VirtualFile focus) {
@@ -142,6 +145,7 @@ public class Dir implements TypedActionHandler {
       tui.text.append("..\n");
     }
 
+    Set<VirtualFile> markedFiles = MARKED_FILES.get(tui.newData, Collections.emptySet());
     Integer firstItemOffset = null;
     Integer caretOffset = null;
     for (VirtualFile child : dirs) {
@@ -151,7 +155,11 @@ public class Dir implements TypedActionHandler {
       if (Objects.equals(child, focus)) {
         caretOffset = tui.text.length();
       }
-      tui.text.append("[").append(child.getName()).append("]\n");
+      tui.text.append("[").append(child.getName()).append("]");
+      if (markedFiles.contains(child)) {
+        tui.text.append("*");
+      }
+      tui.text.append("\n");
     }
     for (VirtualFile child : files) {
       if (firstItemOffset == null) {
@@ -160,7 +168,11 @@ public class Dir implements TypedActionHandler {
       if (Objects.equals(child, focus)) {
         caretOffset = tui.text.length();
       }
-      tui.text.append(child.getName()).append("\n");
+      tui.text.append(child.getName());
+      if (markedFiles.contains(child)) {
+        tui.text.append("*");
+      }
+      tui.text.append("\n");
     }
 
     if (caretOffset == null && !Objects.equals(tui.data.getUserData(DIR), dir)) {
@@ -400,23 +412,67 @@ public class Dir implements TypedActionHandler {
     }
   }
 
-  public static void deleteFile(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+  public static void toggleMark(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    TuiFile file = ObjectUtils.tryCast(editor.getVirtualFile(), TuiFile.class);
+    if (file == null) {
+      return;
+    }
+    VirtualFile dir = getDir(file);
+    if (dir == null) {
+      return;
+    }
     VirtualFile f = getFileUnderCaret(editor);
     if (f != null) {
-      if (Messages.showYesNoDialog("Delete file " + f.getPath() + "?", "Delete File", Messages.getQuestionIcon()) == Messages.YES) {
+      Tui.update(file, editor, tui -> {
+        Set<VirtualFile> newMarkedFiles = new HashSet<>(MARKED_FILES.get(tui.data, new HashSet<>()));
+        if (newMarkedFiles.contains(f)) {
+          newMarkedFiles.remove(f);
+        } else {
+          newMarkedFiles.add(f);
+        }
+        tui.newData.putUserData(MARKED_FILES, newMarkedFiles);
+        printDir(tui, dir, f);
+      });
+      down(editor, charTyped, dataContext);
+    }
+  }
+
+  public static void deleteFile(@NotNull Editor editor, char charTyped, @NotNull DataContext dataContext) {
+    Set<VirtualFile> files = getSelectedFiles(editor);
+    if (!files.isEmpty()) {
+      int count = files.size();
+      String msg = count == 1 ?
+              "Delete file " + files.iterator().next().getPath() + "?" :
+              "Delete file " + count + " " + StringUtil.pluralize("file", count) + "?";
+      String title = "Delete " + StringUtil.pluralize("File", count);
+      if (Messages.showYesNoDialog(msg, title, Messages.getQuestionIcon()) == Messages.YES) {
         ApplicationManager.getApplication().runWriteAction(() -> {
           try {
-            f.delete("Tui");
+            for (VirtualFile f : files) {
+              f.delete("Tui");
+            }
           } catch (IOException e) {
             Messages.showErrorDialog(editor.getProject(), "Failed to delete file", CommonBundle.getErrorTitle());
           }
         });
         refresh(editor, charTyped, dataContext);
       }
+    } else {
+      Messages.showErrorDialog(editor.getProject(), "No file selected", CommonBundle.getErrorTitle());
     }
-    else {
-      Messages.showErrorDialog(editor.getProject(), "File not found", CommonBundle.getErrorTitle());
+  }
+
+  /**
+   * Returns either marked files or a file under caret
+   */
+  @NotNull
+  private static Set<VirtualFile> getSelectedFiles(@NotNull Editor editor) {
+    Set<VirtualFile> markedFiles = Tui.getTuiData(editor.getVirtualFile()).getUserData(MARKED_FILES);
+    if (markedFiles != null && !markedFiles.isEmpty()) {
+      return markedFiles;
     }
+    VirtualFile f = getFileUnderCaret(editor);
+    return f != null ? Set.of(f) : Collections.emptySet();
   }
 
   private static class NavigatableDirItem implements Navigatable {
